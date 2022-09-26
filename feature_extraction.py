@@ -46,6 +46,9 @@ def main():
                                                               img_name_pre='t')
     print(sum(num_client_features) / len(num_client_features))  # 4984.46
 
+    np.save("stacked_server_dict.npy", stacked_server_dict)
+    np.save("stacked_client_dict.npy", stacked_client_dict)
+
 
 if __name__ == '__main__':
     main()
