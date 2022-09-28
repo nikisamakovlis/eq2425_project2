@@ -3,6 +3,7 @@ from feature_extraction import *
 from sklearn.cluster import KMeans
 from collections import Counter
 
+
 def get_prediction_each_feature(feature, name, maxdepth, model_list, name_list, prediction_list=[]):
     # data: (num_obj, num_features_each_object, 128)
     if maxdepth - (len(name.split('_'))-1) >= 1:
@@ -60,6 +61,7 @@ def combine_feature(feature_dict, num_features_each_object):
 
     return np.array(combined_features)  # dimension: (num_obj, num_features_each_object, 128) --> (50, 2000, 128)
 
+
 def compute_tfidf(object_idxs, prediction_names, data):
     n_objects = max(object_idxs)+1  # total number of objects: 50
     unique_predictions = sorted(set(prediction_names))
@@ -76,23 +78,36 @@ def compute_tfidf(object_idxs, prediction_names, data):
             f_list.append(count)
         f_list_all.append(f_list)
     f = np.array(f_list_all)  # number of occurrences of word vi in object oj, shape: (50, 64)
-    F = np.array(list(map(lambda x: x.shape[0], data))).reshape(-1,1)  # total number of visual words in each object with value 2000 repeated 50 times, shape (50,1)
+    F = np.array(list(map(lambda x: x.shape[0], data))).reshape(-1, 1)  # total number of visual words in each object with value 2000 repeated 50 times, shape (50,1)
     tf = f/F  # (50, 64)
-    print(tf.shape)
+    # print(tf.shape)
+    # print(np.array(list(map(lambda x: np.sum(x != 0), f.T))))
 
-    K = np.array(list(map(lambda x: np.sum(x != 0), f.T))).reshape(-1,1)  # number of objects that contain the word vi, shape: (64,1)
+    K_i = np.array(list(map(lambda x: np.sum(x != 0), f.T))).reshape(-1, 1)  # number of objects that contain the word vi, shape: (64,1)
+    K_i = np.repeat(K_i, n_objects, axis=1)
+    # print(K_i)
+    # print(K_i.shape)
+    # print("Unique", np.unique(K_i))
 
-    # W = tf * np.log2(n_objects/K).reshape(-1, 1)   # shape: (50, 64)
-    # print(K)
+    K = np.full(K_i.shape, n_objects)
+    print('f', f)
+    print('f[0]', f[0])
+    print('K', K)
+    print('K_i', K_i)
+
+    idf = np.log2(K/K_i).T
+    W = tf * idf  # shape: (50, 64)
+    # print('tf', tf)
+    # print('idf, ', idf)
+    #
     # print(W.shape)
     # print(W)
-    # return W
+    return W, idf
 
 
 def main():
     # To build the Vocabulary Tree
     stacked_server_dict = np.load("stacked_server_dict.npy", allow_pickle=True)
-    stacked_client_dict = np.load("stacked_client_dict.npy", allow_pickle=True)
 
     num_features_each_object = 2000
     b = 4
@@ -108,7 +123,7 @@ def main():
     #   'm_0_2_0', 'm_0_2_1', 'm_0_2_2', 'm_0_2_3',
     # 'm_0_3',
     #   'm_0_3_0', 'm_0_3_1', 'm_0_3_2', 'm_0_3_3']
-    server_features = combine_feature(stacked_server_dict, num_features_each_object) # (50, 2000, 128)
+    server_features = combine_feature(stacked_server_dict, num_features_each_object)  # (50, 2000, 128)
     print(server_features.shape)
 
     model_list, name_list = hi_kmeans(server_features, b, depth)
@@ -127,8 +142,8 @@ def main():
     # (b) Based on the TF-IDF score, decide what additional information you need to store in
     # the leaf nodes of the tree (Hint: The leaf nodes can be seen as visual vocabularies).
     # leaves: local (SIFT) features indexed, The leaf nodes of this tree contain a "bag" of sift descriptors
-    # TODO: TF-IDF score - not finished 
-    compute_tfidf(object_idxs_all, prediction_names_all, server_features)
+
+    tfidf_w, idf_database = compute_tfidf(object_idxs_all, prediction_names_all, server_features)
 
 
 if __name__ == '__main__':
