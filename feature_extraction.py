@@ -39,12 +39,12 @@ def main():
     # part2-a
     stacked_server_dict, num_server_features = group_features(server_dict, obj_num_max=50, img_num_max=5,
                                                               img_name_pre='')
-    print(sum(num_server_features)/len(num_server_features))  # 14864.0
+    print(sum(num_server_features)/len(num_server_features))  # 5960.52
 
     # part2-b
     stacked_client_dict, num_client_features = group_features(client_dict, obj_num_max=50, img_num_max=1,
                                                               img_name_pre='t')
-    print(sum(num_client_features) / len(num_client_features))  # 4984.46
+    print(sum(num_client_features) / len(num_client_features))  # 2000.1
 
     np.save("stacked_server_dict.npy", stacked_server_dict)
     np.save("stacked_client_dict.npy", stacked_client_dict)

@@ -1,21 +1,25 @@
-from utils import *
 from feature_extraction import *
 from sklearn.cluster import KMeans
-from collections import Counter
 
 
 def get_prediction_each_feature(feature, name, maxdepth, model_list, name_list, prediction_list=[]):
     # data: (num_obj, num_features_each_object, 128)
     if maxdepth - (len(name.split('_'))-1) >= 1:
-        thislevel_idx = name_list.index(name)
-        thislevel_model = model_list[thislevel_idx]
-        leaf_idx = thislevel_model.predict(feature)[0]
-        nextlevel_name = name + f'_{leaf_idx}'
-        prediction_list.append(nextlevel_name)
+        if name in name_list:
+            thislevel_idx = name_list.index(name)
+            thislevel_model = model_list[thislevel_idx]
+            leaf_idx = thislevel_model.predict(feature)[0]
+            nextlevel_name = name + f'_{leaf_idx}'
+            prediction_list.append(nextlevel_name)
+        else:
+            # nextlevel_name = name
+            prediction_list.append(name)
+            return prediction_list
+
         get_prediction_each_feature(feature, nextlevel_name, maxdepth, model_list, name_list, prediction_list)
         return prediction_list
     else:
-        prediction_list
+        return prediction_list
 
 
 def get_prediction_names_all(data, model_list, name_list, maxdepth):
@@ -34,6 +38,7 @@ def get_prediction_names_all(data, model_list, name_list, maxdepth):
 
 def recursive_kmeans(data, idx, b, depth, name, i=0, model_list=[], name_list=[]):
     if data[idx].shape[0] >= b and depth > 1:
+    # if len(idx) > 0 and depth > 1:
         model = KMeans(n_clusters=b, random_state=0).fit(data[idx])
         name = name+f'_{i}'
         model_list.append(model)
@@ -90,10 +95,10 @@ def compute_tfidf(object_idxs, prediction_names, data):
     # print("Unique", np.unique(K_i))
 
     K = np.full(K_i.shape, n_objects)
-    print('f', f)
-    print('f[0]', f[0])
-    print('K', K)
-    print('K_i', K_i)
+    # print('f', f)
+    # print('f[0]', f[0])
+    # print('K', K)
+    # print('K_i', K_i)
 
     idf = np.log2(K/K_i).T
     W = tf * idf  # shape: (50, 64)
@@ -110,8 +115,8 @@ def main():
     stacked_server_dict = np.load("stacked_server_dict.npy", allow_pickle=True)
 
     num_features_each_object = 2000
-    b = 4
-    depth = 4
+    b = 5
+    depth = 7
 
     # for example, when b==4 and depth==4 --> 21 models and
     # name_list: ['m_0', --> depth 4
